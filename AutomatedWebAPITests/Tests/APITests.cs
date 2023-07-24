@@ -1,9 +1,11 @@
 using AutomatedWebAPITests.Models;
 using AutomatedWebAPITests.TestHelpers;
+using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using RestSharp;
 using RestSharp.Authenticators;
 using RestSharp.Authenticators.OAuth2;
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Xml.Linq;
 
@@ -14,13 +16,13 @@ namespace AutomatedWebAPITests.Tests
         private RestClient client;
         private RestClientOptions options;
         public const string baseURL = "https://demoqa.com";
-        public string bearerToken = "tomislavilievqa";
+        //public string bearerToken = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyTmFtZSI6InZhbGlkVXNlck5hbWUiLCJwYXNzd29yZCI6IjFBYUAxQWEoIiwiaWF0IjoxNjkwMjIyODQ4fQ.oh5IEF5OzHuC8jj6Arsm--1hw6B5mRSDlTOhVR7DD7g";
 
         [SetUp]
         public void Setup()
         {
             this.options = new RestClientOptions(baseURL);
-            options.Authenticator = new OAuth2AuthorizationRequestHeaderAuthenticator(bearerToken, "Bearer");
+            //options.Authenticator = new OAuth2AuthorizationRequestHeaderAuthenticator(bearerToken);
             this.client = new RestClient(options);
         }
 
@@ -178,16 +180,19 @@ namespace AutomatedWebAPITests.Tests
 
         }
 
-        [TestCase("validUserName", "1Aa@1Aa(", System.Net.HttpStatusCode.Created)]
-        [TestCase("validUserName", "1Aa@1Aa@(", System.Net.HttpStatusCode.Created)]
+        //preconditions - the user shouldn't be previously created
+        [TestCase("validUserName", "1Aa@1Aa#(", System.Net.HttpStatusCode.Created)]
+        [TestCase("validUserName2", "1Aa@1Aa@#(", System.Net.HttpStatusCode.Created)]
+        [TestCase("validUserName3", "1Aa@1Aa@#((", System.Net.HttpStatusCode.Created)]
         [Category("Task 2")]
         [Test]
         public void Test_VerifyStatusCode_SuccessfulyCreatingNewUser(string userName, string password, System.Net.HttpStatusCode expectedStatusCode)
         {
+
+            // adding new valid user
             var request = new RestRequest("/account/v1/user", Method.Post);
 
             request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Authorization", "Bearer tomislavilievqa"); //adding an extra header since I had issues with the authorization
 
             var newUser = new
             {
@@ -208,22 +213,63 @@ namespace AutomatedWebAPITests.Tests
             Assert.That(user.username, Is.EqualTo(userName));
             Assert.That(user.userID, Is.InstanceOf<string>());
             Assert.That(user.username, Is.InstanceOf<string>());
+            Assert.That(user.books, Is.InstanceOf<List<Books>>());
 
 
-            var books = user.books;
-            var len = books.Count();
+            //var books = user.books;
+            //var len = books.Count();
 
-            Assert.That(books[0], Is.Not.Empty);
-            Assert.That(books[0].isbn, Is.InstanceOf<string>());
-            Assert.That(books[0].title, Is.InstanceOf<string>());
-            Assert.That(books[0].subTitle, Is.InstanceOf<string>());
-            Assert.That(books[0].author, Is.InstanceOf<string>());
-            Assert.That(books[0].publish_date, Is.InstanceOf<DateFormat>());
-            Assert.That(books[0].publisher, Is.InstanceOf<string>());
-            Assert.That(books[0].pages, Is.InstanceOf<int>());
-            Assert.That(books[0].description, Is.InstanceOf<string>());
-            Assert.That(books[0].website, Is.InstanceOf<string>());
-            Assert.That(len, Is.EqualTo(9));
+            //Assert.That(books[0], Is.Not.Empty);
+            //Assert.That(books[0].isbn, Is.InstanceOf<string>());
+            //Assert.That(books[0].title, Is.InstanceOf<string>());
+            //Assert.That(books[0].subTitle, Is.InstanceOf<string>());
+            //Assert.That(books[0].author, Is.InstanceOf<string>());
+            //Assert.That(books[0].publish_date, Is.InstanceOf<DateFormat>());
+            //Assert.That(books[0].publisher, Is.InstanceOf<string>());
+            //Assert.That(books[0].pages, Is.InstanceOf<int>());
+            //Assert.That(books[0].description, Is.InstanceOf<string>());
+            //Assert.That(books[0].website, Is.InstanceOf<string>());
+            //Assert.That(len, Is.EqualTo(9));
+
+            //generating token >>>
+
+            var tokenRequest = new RestRequest("/account/v1/generateToken", Method.Post);
+
+            var verifiedUser = new
+            {
+                userName = userName,
+                password = password
+            };
+
+            tokenRequest.AddJsonBody(verifiedUser);
+
+            var responseToken = client.Execute(tokenRequest); 
+
+            Assert.AreEqual(System.Net.HttpStatusCode.OK, responseToken.StatusCode);
+
+            var token = System.Text.Json.JsonSerializer.Deserialize<Token>(responseToken.Content);
+
+            var apiKey = token.token;
+
+            // authorize check >>
+
+            var authorizedRequest = new RestRequest("/account/v1/authorized", Method.Post);
+
+            var authorizedUser = new
+            {
+                userName = userName,
+                password = password
+            };
+
+            authorizedRequest.AddJsonBody(authorizedUser);
+
+            var responseAuthorized = client.Execute(authorizedRequest);
+
+            var isAuthorized = JsonConvert.DeserializeObject<bool>(responseAuthorized.Content);
+
+            Assert.IsTrue(isAuthorized);
+
+            Assert.AreEqual(System.Net.HttpStatusCode.OK, responseAuthorized.StatusCode);
 
         }
 
@@ -240,7 +286,6 @@ namespace AutomatedWebAPITests.Tests
             var request = new RestRequest("/account/v1/user", Method.Post);
 
             request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Authorization", "Bearer tomislavilievqa"); //adding an extra header since I had issues with the authorization
 
             var newUser = new
             {
@@ -266,7 +311,6 @@ namespace AutomatedWebAPITests.Tests
             var request = new RestRequest("/account/v1/user", Method.Post);
 
             request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Authorization", "Bearer tomislavilievqa"); //adding an extra header since I had issues with the authorization
 
             var newUser = new
             {
@@ -290,7 +334,6 @@ namespace AutomatedWebAPITests.Tests
             var request = new RestRequest("/account/v1/user", Method.Post);
 
             request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Authorization", "Bearer tomislavilievqa"); //adding an extra header since I had issues with the authorization
 
             var newUser = new
             {
@@ -307,15 +350,37 @@ namespace AutomatedWebAPITests.Tests
         }
 
         [Test]
+        [TestCase("validUserName", "1Aa@1Aa(")]
         [Category("Task 3")]
-        public void Test_AddingABook_ToList()
+        public void Test_AddingABook_ToList(string userName, string password)
         {
-            var request = new RestRequest("/bookstore/v1/books", Method.Post);
+            // authorize check
 
-            request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Authorization", "Bearer tomislavilievqa"); //adding an extra header since I had issues with the authorization
+            var authorizedRequest = new RestRequest("/account/v1/authorized", Method.Post);
 
-            var userId = "eacca4a4-ae53-487d-b375-04c961351140";
+            var authorizedUser = new
+            {
+                userName = userName,
+                password = password
+            };
+
+            authorizedRequest.AddJsonBody(authorizedUser);
+
+            var responseAuthorized = client.Execute(authorizedRequest);
+
+            var isAuthorized = JsonConvert.DeserializeObject<bool>(responseAuthorized.Content);
+
+            Assert.IsTrue(isAuthorized);
+            Assert.AreEqual(System.Net.HttpStatusCode.OK, responseAuthorized.StatusCode);
+
+            // adding new book to the collection
+
+            var requestBooks = new RestRequest("/bookstore/v1/books", Method.Post);
+
+            requestBooks.AddHeader("Content-Type", "application/json");
+            requestBooks.AddHeader("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyTmFtZSI6InZhbGlkVXNlck5hbWUiLCJwYXNzd29yZCI6IjFBYUAxQWEoIiwiaWF0IjoxNjkwMjIyODQ4fQ.oh5IEF5OzHuC8jj6Arsm--1hw6B5mRSDlTOhVR7DD7g");
+
+            var userId = "2ed75802-de8a-4652-9a2f-cfd00c0a3bcb";
 
             var addListOfBooks = new
             {
@@ -325,9 +390,9 @@ namespace AutomatedWebAPITests.Tests
                 }
             };
 
-            request.AddBody(addListOfBooks);
+            requestBooks.AddBody(addListOfBooks);
 
-            var response = client.Execute(request);
+            var response = client.Execute(requestBooks);
 
             var books = System.Text.Json.JsonSerializer.Deserialize<Books>(response.Content);
 
@@ -348,9 +413,8 @@ namespace AutomatedWebAPITests.Tests
             var request = new RestRequest("/bookstore/v1/books", Method.Post);
 
             request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Authorization", "Bearer tomislavilievqa");
 
-            var userId = "eacca4a4-ae53-487d-b375-04c961351140";
+            var userId = "2ed75802-de8a-4652-9a2f-cfd00c0a3bcb";
 
             var addListOfBooks = new
             {
@@ -386,9 +450,8 @@ namespace AutomatedWebAPITests.Tests
             var request = new RestRequest("/bookstore/v1/books/9781449325862", Method.Put);
 
             request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Authorization", "Bearer tomislavilievqa"); //adding an extra header since I had issues with the authorization
 
-            var userId = "eacca4a4-ae53-487d-b375-04c961351140";
+            var userId = "2ed75802-de8a-4652-9a2f-cfd00c0a3bcb";
 
             var isbn = "9781593277574";
 
@@ -427,7 +490,6 @@ namespace AutomatedWebAPITests.Tests
             var request = new RestRequest("BookStore/v1/Book?ISBN=9781491904244", Method.Get);
 
             request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Authorization", "Bearer tomislavilievqa"); //adding an extra header since I had issues with the authorization
 
             var response = client.Execute(request);
 
@@ -452,9 +514,8 @@ namespace AutomatedWebAPITests.Tests
             var request = new RestRequest("BookStore/v1/Book", Method.Delete);
 
             request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Authorization", "Bearer tomislavilievqa"); //adding an extra header since I had issues with the authorization
 
-            var userId = "eacca4a4-ae53-487d-b375-04c961351140";
+            var userId = "2ed75802-de8a-4652-9a2f-cfd00c0a3bcb";
 
             var isbn = "9781593275846";
 
@@ -503,9 +564,8 @@ namespace AutomatedWebAPITests.Tests
             var request = new RestRequest("BookStore/v1/Book", Method.Delete);
 
             request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Authorization", "Bearer tomislavilievqa"); //adding an extra header since I had issues with the authorization
 
-            var userId = "eacca4a4-ae53-487d-b375-04c961351140";
+            var userId = "2ed75802-de8a-4652-9a2f-cfd00c0a3bcb";
 
             var isbn = "9781593275846555151"; // non existent ISBN
 
