@@ -103,9 +103,9 @@ namespace AutomatedWebAPITests.Tests
 
             Trace.WriteLine($"Getting the token for userName: {userName}, password: {password}");
 
-            var apiKey = token.token;
+            var apiToken = token.token;
 
-            Trace.WriteLine($"The token is: {apiKey}");
+            Trace.WriteLine($"The token is: {apiToken}");
 
             Trace.WriteLine($"Expected response with status code: {expectedStatusCode}");
 
