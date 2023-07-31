@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using AutomatedWebAPITests.Models;
 
 namespace AutomatedWebAPITests.TestHelpers
 {
-    public class NewBook
+    public class UnathorizedMessage
     {
         public string userId { get; set; }
-        public List<Book> collectionOfIsbns { get; set; }
-        public string isbn { get; set; }
+        public string message { get; set; }
     }
 }

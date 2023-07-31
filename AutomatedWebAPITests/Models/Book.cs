@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AutomatedWebAPITests.Models
 {
-    public class Books
+    public class Book
     {
         public string isbn { get; set; }
 

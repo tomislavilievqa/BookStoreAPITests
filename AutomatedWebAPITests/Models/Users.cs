@@ -11,7 +11,7 @@ namespace AutomatedWebAPITests.Models
 
         public string userID { get; set; } 
         public string username { get; set; } 
-        public List<Books> books { get; set; }
+        public List<Book> books { get; set; }
 
     }
 }

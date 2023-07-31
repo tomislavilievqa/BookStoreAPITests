@@ -10,6 +10,6 @@ namespace AutomatedWebAPITests.TestHelpers
 {
     public class BookWrapper
     {
-        public List<Books> Books { get; set; }
+        public List<Book> books { get; set; }
     }
 }
